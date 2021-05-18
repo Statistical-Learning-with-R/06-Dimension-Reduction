@@ -8,7 +8,6 @@ knitr::opts_chunk$set(message = FALSE, warning = FALSE)
 
 library(tidyverse)
 library(tidymodels)
-library(leaps)
 
 
 set.seed(98249)
