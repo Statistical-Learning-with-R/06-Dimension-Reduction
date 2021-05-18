@@ -1,0 +1,323 @@
+---
+title: "Principal Components Analysis"
+resource_files:
+- appforthat.jpg
+output:
+  xaringan::moon_reader:
+    css: xaringan-themer.css
+    lib_dir: libs
+    nature:
+      highlightLines: yes
+      highlightStyle: github
+      countIncrementalSlides: false
+      ratio: '16:9'
+
+---
+
+```{r setup, include=FALSE}
+options(htmltools.dir.version = FALSE, digits = 4, scipen=999)
+library(tidyverse)
+library(tidymodels)
+library(flair)
+library(kknn)
+library(glmnet)
+library(discrim)
+```
+
+```{r xaringan-themer, include=FALSE}
+library(xaringanthemer)
+library(xaringanExtra)
+style_mono_light(
+  base_color = "#26116c",
+  text_bold_color = "#fd5e53",
+  title_slide_text_color = "#fff8e7",
+  background_color = "#fff8e7",
+  header_font_google = google_font("Roboto"),
+  text_font_google   = google_font("Roboto Condensed"),
+  code_font_google   = google_font("Droid Mono")
+)
+```
+
+```{css, echo = FALSE}
+.red{ color: red; }
+.blue{ color: blue; }
+.huge {
+  font-size: 200%;
+}
+.large {
+  font-size: 150%;
+}
+.tiny {
+  font-size: 50%;
+}
+```
+
+
+---
+# Dimensionality
+
+Let's start thinking about our data in terms of *dimensions in space*.
+
+--
+
+Each **predictor** is an **axis**.
+
+--
+
+The values of the predictors for a certain **observation** define a point in space.
+
+--
+
+When we compute distances between observations for KNN, we are computing **distance in space**.
+
+--
+
+When we fit a **regression**, we are drawing a **straight line** through the points.
+
+---
+## The curse of dimensionality
+
+We run into trouble when we have **too many dimensions**.
+
+--
+
+What does "too many" mean?
+
+--
+
+**Parametric** estimation ->  We can't estimate 7000 coefficients from only 44 observations!
+
+--
+
+**Interpretability** -> Do we really want to translate our model into meaning for thousands of predictors???
+
+--
+
+**Flexibility** ->  More predictors = more flexibility = overfitting?
+
+---
+## Principal Components Analysis
+
+**PCA** is a way to *transform our data*  (prior to modeling!) so that it has fewer **dimensions in space**.
+
+--
+
+Instead of:
+
+axis 1 = Predictor A
+axis 2 = Predictor B
+axis 3 = Predictor C
+
+--
+
+axis 1 = 0.5 (Pred A) + 0.2 (Pred B) + 0.3 (Pred C)
+axis 2 = 0.1 (Pred A) + 0.7 (Pred B) + 0.2 (Pred C)
+axis 3 = 0.1 (Pred A) + 0.2 (Pred B) + 0.8 (Pred C)
+
+
+---
+## PCA
+
+![](https://miro.medium.com/freeze/max/499/1*V9yJUH9tVrMQI88TuIkCFQ.gif)
+---
+## PCA
+
+1. **Standardize** all axes.
+
+--
+
+2.  Find the axis of **highest variance**: This is PC 1.
+
+--
+
+3.  Find the axis of **highest variance** that is **perpendicular to PC 1**:  This is PC2.
+
+--
+
+4. Continue until you have $p$ PCs, where $p$ = number of predictors.
+
+--
+
+5. Use only the first $k$ predictors in your analysis, where $k < p$.
+
+---
+## Example
+
+The **Federalist paper** are a series of essays written by John Jay, Alexander Hamilton, and James Madison.
+
+Data: How many of each word was used in each essay (for the most common 200 words only).
+
+```{r, echo = FALSE}
+# Read data
+fed <- read.csv("https://www.dropbox.com/s/9t8sxr1sg0monih/federalist.txt?dl=1")
+fed <- fed[,-1]
+
+# Keep numeric section only
+fed_all <- as.matrix(fed[,-1])
+fed_all <- apply(fed_all, 2, as.numeric)
+
+auths <- fed$Author
+
+# Data from papers with known authors
+fed_known <- as.matrix(fed[auths != 'DIS',-1])
+fed_known <- apply(fed_known, 2, as.numeric)
+
+auths_known = auths[auths != 'DIS']
+
+# Data from papers with unknown authors
+fed_unknown <- as.matrix(fed[auths == 'DIS',-1])
+fed_unknown <- apply(fed_unknown, 2, as.numeric)
+
+fed_ex <- as_tibble(fed_known) %>% cbind(auths_known)
+```
+
+---
+## Example
+
+If we choose a couple words and plot our data...
+
+```{r, echo = FALSE}
+fed_ex %>%
+  ggplot(aes(x = there, y = would, color = auths_known)) +
+  geom_point()
+```
+
+---
+## Example
+
+Instead, let's apply pca:
+
+```{r}
+fed_matrix <- fed_ex %>% select(-auths_known) %>% as.matrix()
+pc <- prcomp(fed_matrix, center = TRUE, scale = TRUE)
+```
+---
+## Example
+
+Combinations of variables that create new axes:
+
+```{r}
+pc$rotation
+```
+
+---
+## Example
+
+What variables matter most?
+
+```{r}
+pcs_df <- pc$rotation %>%
+  as.data.frame() %>%
+  rownames_to_column() 
+
+pcs_df %>%
+  arrange(desc(abs(PC1)))
+```
+
+---
+## Example
+
+This doesn't really help us visualize the data...
+
+```{r, echo = FALSE}
+fed_ex %>%
+  ggplot(aes(x = and, y = of, color = auths_known)) +
+  geom_point()
+```
+
+
+---
+## Example
+
+Locations of observations on new axes:
+
+```{r}
+new_dims_df <- pc$x %>%
+  as.data.frame()
+
+new_dims_df
+```
+
+---
+## Example
+
+```{r}
+new_dims_df %>%
+  ggplot(aes(x = PC1, y = PC2, color = auths_known)) +
+  geom_point()
+```
+
+---
+## Example
+
+```{r}
+pc$sdev
+```
+
+---
+## Example
+
+```{r}
+cumul_vars <- cumsum(pc$sdev^2)/sum(pc$sdev^2)
+cumul_vars
+```
+---
+## Example
+
+```{r}
+plot(cumul_vars)
+```
+
+---
+## Details
+
+**How many PCs should we use?**
+
+--
+
+No single answer; people often do "enough for 90% variance covered" or similar.
+
+--
+
+**How do you do clustering/classification with PCA?**
+
+--
+
+You don't.  It's a data *preprocessing* step.  You would then use `PC1`, `PC2`, etc as your predictors.
+
+---
+## Pros and Cons
+
+**Pros:**
+
+* Reduces dimension while still letting all original predictors be "involved"
+
+* Computationally fast for big data
+
+* Axis rotations are interpretable!
+
+* Dropping off lower PCs gets rid of noise (maybe)
+
+--
+
+**Cons:**
+
+* Using PCs in interpretable models makes them uninterpretable.  (What does the coefficient of PC1 mean in real life?)
+
+* No magic answer for how many PCs to use.
+
+* Dropping off lower PCs gets rid of useful info (maybe)
+
+
+---
+class: center, middle, inverse
+
+# Try it!
+
+## Open a **Activity-PCA.Rmd**
+#### Apply PCA to the cannabis data
+#### Interpret the PC rotations
+#### Plot the data on the first two axes, and color by Type.
+#### Choose a "good" number of PCs to use.
+#### Fit a KNN classifier using only your chosen PCs.  How does the accuracy compare to when you use all the original predictors?
+
