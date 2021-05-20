@@ -1,0 +1,736 @@
+<!DOCTYPE html>
+<html lang="" xml:lang="">
+  <head>
+    <title>Clustering</title>
+    <meta charset="utf-8" />
+    <script src="libs/header-attrs/header-attrs.js"></script>
+    <link rel="stylesheet" href="xaringan-themer.css" type="text/css" />
+  </head>
+  <body>
+    <textarea id="source">
+class: center, middle, inverse, title-slide
+
+# Clustering
+
+---
+
+
+
+
+
+
+&lt;style type="text/css"&gt;
+.red{ color: red; }
+.blue{ color: blue; }
+.huge {
+  font-size: 200%;
+}
+.large {
+  font-size: 150%;
+}
+.tiny {
+  font-size: 50%;
+}
+&lt;/style&gt;
+
+
+---
+## Unsupervised Learning
+
+So far in this class, we've only done **supervised learning**.
+
+Meaning:  We have a **response variable** and we observe its value for all or some of our observations.
+
+--
+
+**Clustering** is a type of **unsupervised learning**.
+
+--
+
+We want to sort our observations into **clusters** based on the **predictors**...
+
+--
+
+... but we don't have a pre-conceived notion of what those clusters represent!
+
+---
+
+## Clustering
+
+The general goal of clustering is typically to make clusters such that points **within** a cluster are closer to each other than to the points **outside** the cluster.
+
+--
+
+What is our definition of **close**?
+
+--
+
+How **many** clusters do we think exist?
+
+--
+
+What **algorithm** do we use to select the clusters?
+
+
+---
+## K-means clustering
+
+Idea:  Iteratively update the **centers** of the clusters until convergence.
+
+--
+
+1. Plop 3 random points down in space. These are the *centroids*.
+
+--
+
+2. Determine which centroid each observation is closest to.  Assign it to that cluster.
+
+--
+
+3. Mind the mean of each cluster.  These are the *new* centroids.
+
+--
+
+4. Continue until the centroids don't change.
+
+---
+
+![](https://www.naftaliharris.com/blog/visualizing-k-means-clustering/)
+
+---
+
+## K-means Clustering
+
+The `kmeans()` function needs to be given a **matrix of data** and a **number of clusters**.
+
+It gives back **centroids**, **cluster assignments**, and **sum-of-squares**.
+
+--
+
+
+
+
+```r
+fed_km &lt;- kmeans(fed_matrix, 3)
+fed_km
+```
+
+```
+## K-means clustering with 3 clusters of sizes 26, 5, 39
+## 
+## Cluster means:
+##         a        do       is       or     this      all       down      it
+## 1 0.01991 0.0003927 0.011035 0.006990 0.007490 0.003988 0.00020684 0.01388
+## 2 0.01133 0.0005557 0.006617 0.011255 0.004472 0.002808 0.00000000 0.01659
+## 3 0.02264 0.0004926 0.011389 0.006299 0.007694 0.003692 0.00006095 0.01290
+##         our      to      also      even      its    shall         up       an
+## 1 0.0007316 0.03991 0.0004887 0.0008273 0.003761 0.001594 0.00006386 0.005143
+## 2 0.0044983 0.03462 0.0013692 0.0005221 0.002432 0.001175 0.00000000 0.002015
+## 3 0.0020956 0.03882 0.0003545 0.0009570 0.003617 0.001507 0.00037792 0.005632
+##       every      may   should      upon     and     for.     more       so
+## 1 0.0015005 0.004252 0.002164 0.0024354 0.02481 0.006119 0.002760 0.001935
+## 2 0.0004988 0.003866 0.002959 0.0001198 0.04885 0.006796 0.005968 0.003247
+## 3 0.0018063 0.004356 0.001963 0.0027342 0.02559 0.006711 0.002886 0.002195
+##        was      any     from     must      some     were      are      had
+## 1 0.001450 0.002925 0.004930 0.001991 0.0009518 0.001211 0.004672 0.001243
+## 2 0.001699 0.002560 0.006205 0.001444 0.0015569 0.001991 0.005777 0.001105
+## 3 0.001539 0.003022 0.005779 0.002555 0.0014136 0.001507 0.005327 0.001454
+##          my     such     what       as      has       no     than      when
+## 1 0.0001322 0.002073 0.001191 0.008948 0.002657 0.002629 0.002846 0.0008404
+## 2 0.0003618 0.003601 0.001148 0.011498 0.001965 0.001162 0.004317 0.0016872
+## 3 0.0003375 0.002146 0.001287 0.008645 0.003715 0.002593 0.003044 0.0010076
+##         at     have      not    that    which      be       her       now
+## 1 0.002745 0.006013 0.006159 0.01470 0.010791 0.02168 0.0001255 0.0004326
+## 2 0.002607 0.005895 0.007625 0.01751 0.006758 0.01880 0.0010409 0.0004457
+## 3 0.003359 0.007324 0.006319 0.01493 0.011130 0.01995 0.0008013 0.0004449
+##       the      who     been       his      of    their     will      but
+## 1 0.10641 0.001867 0.003792 0.0017050 0.06602 0.004578 0.006730 0.003198
+## 2 0.06104 0.003742 0.001825 0.0006076 0.04376 0.009810 0.008446 0.004781
+## 3 0.08707 0.002502 0.004712 0.0021895 0.06232 0.005920 0.006149 0.003631
+##        if.       on      then     with       by     in.      one    there
+## 1 0.003313 0.004203 0.0004346 0.005784 0.007441 0.02323 0.002792 0.002621
+## 2 0.004054 0.005086 0.0005555 0.007253 0.009479 0.01921 0.005726 0.001024
+## 3 0.003052 0.004274 0.0003348 0.005290 0.008641 0.02383 0.002618 0.002865
+##      would      can     into     only     things      your
+## 1 0.007842 0.002768 0.001345 0.001586 0.00018331 0.0000000
+## 2 0.009061 0.002233 0.003068 0.003100 0.00008643 0.0004461
+## 3 0.007405 0.002344 0.001717 0.001319 0.00024624 0.0002759
+## 
+## Clustering vector:
+##  [1] 3 2 2 2 2 3 3 3 3 3 3 3 3 3 3 1 1 3 3 1 3 3 3 1 1 1 3 3 1 3 3 3 3 3 3 1 3 3
+## [39] 3 1 1 1 1 1 3 3 1 1 2 1 1 1 3 1 3 1 3 3 1 1 3 3 1 3 1 1 1 3 3 3
+## 
+## Within cluster sum of squares by cluster:
+## [1] 0.013263 0.002869 0.017125
+##  (between_SS / total_SS =  35.0 %)
+## 
+## Available components:
+## 
+## [1] "cluster"      "centers"      "totss"        "withinss"     "tot.withinss"
+## [6] "betweenss"    "size"         "iter"         "ifault"
+```
+
+---
+
+
+```r
+fed_km$centers
+```
+
+```
+##         a        do       is       or     this      all       down      it
+## 1 0.01991 0.0003927 0.011035 0.006990 0.007490 0.003988 0.00020684 0.01388
+## 2 0.01133 0.0005557 0.006617 0.011255 0.004472 0.002808 0.00000000 0.01659
+## 3 0.02264 0.0004926 0.011389 0.006299 0.007694 0.003692 0.00006095 0.01290
+##         our      to      also      even      its    shall         up       an
+## 1 0.0007316 0.03991 0.0004887 0.0008273 0.003761 0.001594 0.00006386 0.005143
+## 2 0.0044983 0.03462 0.0013692 0.0005221 0.002432 0.001175 0.00000000 0.002015
+## 3 0.0020956 0.03882 0.0003545 0.0009570 0.003617 0.001507 0.00037792 0.005632
+##       every      may   should      upon     and     for.     more       so
+## 1 0.0015005 0.004252 0.002164 0.0024354 0.02481 0.006119 0.002760 0.001935
+## 2 0.0004988 0.003866 0.002959 0.0001198 0.04885 0.006796 0.005968 0.003247
+## 3 0.0018063 0.004356 0.001963 0.0027342 0.02559 0.006711 0.002886 0.002195
+##        was      any     from     must      some     were      are      had
+## 1 0.001450 0.002925 0.004930 0.001991 0.0009518 0.001211 0.004672 0.001243
+## 2 0.001699 0.002560 0.006205 0.001444 0.0015569 0.001991 0.005777 0.001105
+## 3 0.001539 0.003022 0.005779 0.002555 0.0014136 0.001507 0.005327 0.001454
+##          my     such     what       as      has       no     than      when
+## 1 0.0001322 0.002073 0.001191 0.008948 0.002657 0.002629 0.002846 0.0008404
+## 2 0.0003618 0.003601 0.001148 0.011498 0.001965 0.001162 0.004317 0.0016872
+## 3 0.0003375 0.002146 0.001287 0.008645 0.003715 0.002593 0.003044 0.0010076
+##         at     have      not    that    which      be       her       now
+## 1 0.002745 0.006013 0.006159 0.01470 0.010791 0.02168 0.0001255 0.0004326
+## 2 0.002607 0.005895 0.007625 0.01751 0.006758 0.01880 0.0010409 0.0004457
+## 3 0.003359 0.007324 0.006319 0.01493 0.011130 0.01995 0.0008013 0.0004449
+##       the      who     been       his      of    their     will      but
+## 1 0.10641 0.001867 0.003792 0.0017050 0.06602 0.004578 0.006730 0.003198
+## 2 0.06104 0.003742 0.001825 0.0006076 0.04376 0.009810 0.008446 0.004781
+## 3 0.08707 0.002502 0.004712 0.0021895 0.06232 0.005920 0.006149 0.003631
+##        if.       on      then     with       by     in.      one    there
+## 1 0.003313 0.004203 0.0004346 0.005784 0.007441 0.02323 0.002792 0.002621
+## 2 0.004054 0.005086 0.0005555 0.007253 0.009479 0.01921 0.005726 0.001024
+## 3 0.003052 0.004274 0.0003348 0.005290 0.008641 0.02383 0.002618 0.002865
+##      would      can     into     only     things      your
+## 1 0.007842 0.002768 0.001345 0.001586 0.00018331 0.0000000
+## 2 0.009061 0.002233 0.003068 0.003100 0.00008643 0.0004461
+## 3 0.007405 0.002344 0.001717 0.001319 0.00024624 0.0002759
+```
+
+---
+
+
+```r
+fed_km$totss
+```
+
+```
+## [1] 0.0512
+```
+
+```r
+fed_km$withinss
+```
+
+```
+## [1] 0.013263 0.002869 0.017125
+```
+
+```r
+fed_km$betweenss
+```
+
+```
+## [1] 0.01794
+```
+
+---
+
+
+```r
+res &lt;- tibble(
+  clust = fed_km$cluster, 
+  auth = auths_known)
+
+res
+```
+
+```
+## # A tibble: 70 x 2
+##    clust auth 
+##    &lt;int&gt; &lt;chr&gt;
+##  1     3 AH   
+##  2     2 JJ   
+##  3     2 JJ   
+##  4     2 JJ   
+##  5     2 JJ   
+##  6     3 AH   
+##  7     3 AH   
+##  8     3 AH   
+##  9     3 AH   
+## 10     3 JM   
+## # ... with 60 more rows
+```
+
+---
+
+
+```r
+res %&gt;% count(clust, auth)
+```
+
+```
+## # A tibble: 5 x 3
+##   clust auth      n
+##   &lt;int&gt; &lt;chr&gt; &lt;int&gt;
+## 1     1 AH       20
+## 2     1 JM        6
+## 3     2 JJ        5
+## 4     3 AH       31
+## 5     3 JM        8
+```
+
+---
+## K-means + PCA
+
+Did we really need all 200 variables to find those clusters?  
+
+--
+
+Did we maybe "muddy the waters" by weighing all variables equally?
+
+--
+
+It is **very common** to do a PCA reduction before running k-means!
+
+--
+
+
+```r
+pc &lt;- prcomp(fed_matrix, center = TRUE, scale = TRUE)
+
+fed_reduced &lt;- pc$x[, 1:2]
+
+fed_pca_km &lt;- kmeans(fed_reduced, 3)
+```
+
+---
+
+
+```r
+res &lt;- tibble(
+  clust = fed_pca_km$cluster, 
+  auth = auths_known)
+
+res %&gt;% count(clust, auth)
+```
+
+```
+## # A tibble: 5 x 3
+##   clust auth      n
+##   &lt;int&gt; &lt;chr&gt; &lt;int&gt;
+## 1     1 AH        8
+## 2     1 JJ        1
+## 3     1 JM       14
+## 4     2 JJ        4
+## 5     3 AH       43
+```
+
+
+---
+## What if we'd done four centroids?
+
+
+```r
+pc &lt;- prcomp(fed_matrix, center = TRUE, scale = TRUE)
+
+fed_reduced &lt;- pc$x[, 1:2]
+
+fed_pca_km &lt;- kmeans(fed_reduced, 4)
+
+res &lt;- tibble(
+  clust = fed_pca_km$cluster, 
+  auth = auths_known)
+
+res %&gt;% count(clust, auth)
+```
+
+```
+## # A tibble: 7 x 3
+##   clust auth      n
+##   &lt;int&gt; &lt;chr&gt; &lt;int&gt;
+## 1     1 AH       26
+## 2     1 JM        1
+## 3     2 JJ        4
+## 4     3 AH        3
+## 5     3 JJ        1
+## 6     3 JM       13
+## 7     4 AH       22
+```
+---
+## K-means
+
+**Pros:**
+
+--
+
+* Simple algorithm, easy to understand
+
+--
+
+* Plays nice with PCA
+
+--
+
+* SUPER fast to compute
+
+--
+
+**Cons:**
+
+--
+
+* Very sensitive to the random locations of initial centroids
+
+--
+
+* The user has to pick how many clusters.
+
+
+---
+class: center, middle, inverse
+
+# Try it!
+
+## Open a **Activity-Clustering.Rmd**
+
+#### Apply k-means clustering to the cannabis data using *all* the word predictors.
+#### What was the within and between sum of squares?
+#### Did the clusters match up with the Type?
+
+#### Refer back to your PCA analysis of the cannabis data.
+#### Apply k-means clustering to the **second and third** PC only
+#### Plot these clusters.  What do you think they capture?
+
+---
+
+## Hierarchical Clustering
+
+(also called **agglomerative** clustering)
+
+Idea:  Merge observations that are close together.
+
+--
+
+1. Find the closest two observations.  Replace them with their centroid.
+
+--
+
+2. Find the next two closest observations.  (One might be the centroid!) Replace them with their centroid.
+
+--
+
+3. Continue until all observations have been merged.
+
+
+---
+## Hierarchical clustering
+
+
+.pull-left[
+![](https://upload.wikimedia.org/wikipedia/commons/thumb/b/b5/Clusters.svg/250px-Clusters.svg.png)
+]
+
+.pull-right[
+![](https://upload.wikimedia.org/wikipedia/commons/thumb/a/ad/Hierarchical_clustering_simple_diagram.svg/418px-Hierarchical_clustering_simple_diagram.svg.png)
+]
+
+---
+## Hierarchical clustering
+
+The `hclust` function needs to be given a *distance matrix*.
+
+--
+
+
+```r
+fed_hc &lt;- fed_matrix %&gt;% hclust()
+```
+
+```
+## Error in if (is.na(n) || n &gt; 65536L) stop("size cannot be NA nor exceed 65536"): missing value where TRUE/FALSE needed
+```
+
+---
+## Hierarchical clustering
+
+The `hclust` function needs to be given a *distance matrix*.
+
+It gives back a **dendrogram**.
+
+--
+
+
+```r
+fed_hc &lt;- fed_matrix %&gt;% dist() %&gt;% hclust()
+```
+
+---
+
+
+```r
+plot(fed_hc)
+```
+
+![](index_files/figure-html/unnamed-chunk-13-1.png)&lt;!-- --&gt;
+---
+
+
+```r
+plot(fed_hc, labels = auths_known)
+```
+
+![](index_files/figure-html/unnamed-chunk-14-1.png)&lt;!-- --&gt;
+
+---
+## Dendrograms
+
+To decide how to assign clusters, we can:
+
+1. Choose **how many** clusters we want...
+
+--
+
+
+```r
+res_hc &lt;- cutree(fed_hc, k = 3)
+
+res_hc
+```
+
+```
+##  [1] 1 2 2 2 2 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 3 1 1
+## [39] 1 3 3 3 3 3 1 1 1 1 2 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1
+```
+
+---
+
+
+
+```r
+tibble(
+  clust = res_hc,
+  auth = auths_known
+) %&gt;%
+  count(clust, auth)
+```
+
+```
+## # A tibble: 4 x 3
+##   clust auth      n
+##   &lt;int&gt; &lt;chr&gt; &lt;int&gt;
+## 1     1 AH       51
+## 2     1 JM        8
+## 3     2 JJ        5
+## 4     3 JM        6
+```
+
+
+---
+## Dendrograms
+
+To decide how to assign clusters, we can:
+
+2. Choose a **height cutoff** for the dendrogram
+
+--
+
+
+```r
+res_hc_2 &lt;- cutree(fed_hc, h = 0.05)
+res_hc_2
+```
+
+```
+##  [1] 1 2 2 2 2 1 1 1 1 1 1 1 1 1 1 3 3 3 1 3 1 1 1 3 3 3 1 1 3 1 1 1 1 1 1 4 1 1
+## [39] 3 4 4 4 4 4 1 1 1 1 2 3 3 3 1 3 3 1 1 1 3 3 1 3 1 1 3 1 3 1 3 3
+```
+
+---
+
+
+
+```r
+tibble(
+  clust = res_hc_2,
+  auth = auths_known
+) %&gt;%
+  count(clust, auth)
+```
+
+```
+## # A tibble: 6 x 3
+##   clust auth      n
+##   &lt;int&gt; &lt;chr&gt; &lt;int&gt;
+## 1     1 AH       31
+## 2     1 JM        7
+## 3     2 JJ        5
+## 4     3 AH       20
+## 5     3 JM        1
+## 6     4 JM        6
+```
+
+---
+## Hierarchical Clustering
+
+**Pros:**
+
+--
+
+* Fast computation for moderate sized data
+
+--
+
+* Gives back full information in dendrogram form
+
+
+--
+
+**Cons:**
+
+--
+
+* User has to decide how to go from dendrogram to cluster assignments
+
+---
+class: center, middle, inverse
+
+# Try it!
+
+## Open **Activity-Clustering.Rmd**
+
+#### Apply hierarchical clustering to the cannabis data
+#### Compare your results to k-means. Which do you prefer?  Why?
+    </textarea>
+<style data-target="print-only">@media screen {.remark-slide-container{display:block;}.remark-slide-scaler{box-shadow:none;}}</style>
+<script src="https://remarkjs.com/downloads/remark-latest.min.js"></script>
+<script>var slideshow = remark.create({
+"highlightLines": true,
+"highlightStyle": "github",
+"countIncrementalSlides": false,
+"ratio": "16:9"
+});
+if (window.HTMLWidgets) slideshow.on('afterShowSlide', function (slide) {
+  window.dispatchEvent(new Event('resize'));
+});
+(function(d) {
+  var s = d.createElement("style"), r = d.querySelector(".remark-slide-scaler");
+  if (!r) return;
+  s.type = "text/css"; s.innerHTML = "@page {size: " + r.style.width + " " + r.style.height +"; }";
+  d.head.appendChild(s);
+})(document);
+
+(function(d) {
+  var el = d.getElementsByClassName("remark-slides-area");
+  if (!el) return;
+  var slide, slides = slideshow.getSlides(), els = el[0].children;
+  for (var i = 1; i < slides.length; i++) {
+    slide = slides[i];
+    if (slide.properties.continued === "true" || slide.properties.count === "false") {
+      els[i - 1].className += ' has-continuation';
+    }
+  }
+  var s = d.createElement("style");
+  s.type = "text/css"; s.innerHTML = "@media print { .has-continuation { display: none; } }";
+  d.head.appendChild(s);
+})(document);
+// delete the temporary CSS (for displaying all slides initially) when the user
+// starts to view slides
+(function() {
+  var deleted = false;
+  slideshow.on('beforeShowSlide', function(slide) {
+    if (deleted) return;
+    var sheets = document.styleSheets, node;
+    for (var i = 0; i < sheets.length; i++) {
+      node = sheets[i].ownerNode;
+      if (node.dataset["target"] !== "print-only") continue;
+      node.parentNode.removeChild(node);
+    }
+    deleted = true;
+  });
+})();
+(function() {
+  "use strict"
+  // Replace <script> tags in slides area to make them executable
+  var scripts = document.querySelectorAll(
+    '.remark-slides-area .remark-slide-container script'
+  );
+  if (!scripts.length) return;
+  for (var i = 0; i < scripts.length; i++) {
+    var s = document.createElement('script');
+    var code = document.createTextNode(scripts[i].textContent);
+    s.appendChild(code);
+    var scriptAttrs = scripts[i].attributes;
+    for (var j = 0; j < scriptAttrs.length; j++) {
+      s.setAttribute(scriptAttrs[j].name, scriptAttrs[j].value);
+    }
+    scripts[i].parentElement.replaceChild(s, scripts[i]);
+  }
+})();
+(function() {
+  var links = document.getElementsByTagName('a');
+  for (var i = 0; i < links.length; i++) {
+    if (/^(https?:)?\/\//.test(links[i].getAttribute('href'))) {
+      links[i].target = '_blank';
+    }
+  }
+})();
+// adds .remark-code-has-line-highlighted class to <pre> parent elements
+// of code chunks containing highlighted lines with class .remark-code-line-highlighted
+(function(d) {
+  const hlines = d.querySelectorAll('.remark-code-line-highlighted');
+  const preParents = [];
+  const findPreParent = function(line, p = 0) {
+    if (p > 1) return null; // traverse up no further than grandparent
+    const el = line.parentElement;
+    return el.tagName === "PRE" ? el : findPreParent(el, ++p);
+  };
+
+  for (let line of hlines) {
+    let pre = findPreParent(line);
+    if (pre && !preParents.includes(pre)) preParents.push(pre);
+  }
+  preParents.forEach(p => p.classList.add("remark-code-has-line-highlighted"));
+})(document);</script>
+
+<script>
+slideshow._releaseMath = function(el) {
+  var i, text, code, codes = el.getElementsByTagName('code');
+  for (i = 0; i < codes.length;) {
+    code = codes[i];
+    if (code.parentNode.tagName !== 'PRE' && code.childElementCount === 0) {
+      text = code.textContent;
+      if (/^\\\((.|\s)+\\\)$/.test(text) || /^\\\[(.|\s)+\\\]$/.test(text) ||
+          /^\$\$(.|\s)+\$\$$/.test(text) ||
+          /^\\begin\{([^}]+)\}(.|\s)+\\end\{[^}]+\}$/.test(text)) {
+        code.outerHTML = code.innerHTML;  // remove <code></code>
+        continue;
+      }
+    }
+    i++;
+  }
+};
+slideshow._releaseMath(document);
+</script>
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+(function () {
+  var script = document.createElement('script');
+  script.type = 'text/javascript';
+  script.src  = 'https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-MML-AM_CHTML';
+  if (location.protocol !== 'file:' && /^https?:/.test(script.src))
+    script.src  = script.src.replace(/^https?:/, '');
+  document.getElementsByTagName('head')[0].appendChild(script);
+})();
+</script>
+  </body>
+</html>

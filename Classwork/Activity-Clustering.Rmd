@@ -1,0 +1,177 @@
+---
+title: "Clustering"
+author: "YOUR NAME"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(message = FALSE, warning = FALSE)
+
+library(tidyverse)
+library(tidymodels)
+
+
+set.seed(98249)
+```
+
+## Data Prep
+
+```{r}
+cann <- read_csv("https://www.dropbox.com/s/s2a1uoiegitupjc/cannabis_full.csv?dl=1") %>%
+  select(-Effects, -Flavor, -Dry, -Mouth) %>%
+  drop_na()
+
+cann_matrix <- cann %>%
+  select(-Type, -Strain) %>%
+  drop_na() %>%
+  as.matrix()
+```
+
+## Code from Lecture
+
+```{r, echo = FALSE}
+# Read data
+fed <- read.csv("https://www.dropbox.com/s/9t8sxr1sg0monih/federalist.txt?dl=1")
+fed <- fed[,-1]
+
+# Keep numeric section only
+fed_all <- as.matrix(fed[,-1])
+fed_all <- apply(fed_all, 2, as.numeric)
+
+auths <- fed$Author
+
+# Data from papers with known authors
+fed_known <- as.matrix(fed[auths != 'DIS',-1])
+fed_known <- apply(fed_known, 2, as.numeric)
+
+auths_known = auths[auths != 'DIS']
+
+
+fed_ex <- as_tibble(fed_known) %>% cbind(auths_known)
+
+fed_matrix <- fed_ex %>% select(-auths_known) %>% as.matrix()
+```
+
+
+```{r}
+fed_km <- kmeans(fed_matrix, 3)
+fed_km
+```
+
+```{r}
+fed_km$centers
+```
+
+
+```{r}
+fed_km$totss
+fed_km$withinss
+fed_km$betweenss
+```
+
+
+```{r}
+res <- tibble(
+  clust = fed_km$cluster, 
+  auth = auths_known)
+
+res
+```
+
+
+```{r}
+res %>% count(clust, auth)
+```
+
+
+```{r}
+pc <- prcomp(fed_matrix, center = TRUE, scale = TRUE)
+
+fed_reduced <- pc$x[, 1:2]
+
+fed_pca_km <- kmeans(fed_reduced, 3)
+```
+
+
+```{r}
+res <- tibble(
+  clust = fed_pca_km$cluster, 
+  auth = auths_known)
+
+res %>% count(clust, auth)
+```
+
+```{r}
+pc <- prcomp(fed_matrix, center = TRUE, scale = TRUE)
+
+fed_reduced <- pc$x[, 1:2]
+
+fed_pca_km <- kmeans(fed_reduced, 4)
+
+res <- tibble(
+  clust = fed_pca_km$cluster, 
+  auth = auths_known)
+
+res %>% count(clust, auth)
+```
+
+
+## Try it!
+
+#### Apply k-means clustering to the cannabis data using *all* the word predictors.
+#### What was the within and between sum of squares?
+#### Did the clusters match up with the Type?
+
+#### Refer back to your PCA analysis of the cannabis data.
+#### Apply k-means clustering to the **second and third** PC only
+#### Plot these clusters.  What do you think they capture?
+
+
+## More code from class
+
+
+```{r}
+fed_hc <- fed_matrix %>% dist() %>% hclust()
+```
+
+
+```{r}
+plot(fed_hc)
+```
+
+```{r}
+plot(fed_hc, labels = fed_known$auths)
+```
+
+```{r}
+res_hc <- cutree(fed_hc, k = 3)
+
+res_hc
+```
+
+
+```{r}
+tibble(
+  clust = res_hc,
+  auth = fed_known$auths
+) %>%
+  count(clust, auth)
+```
+
+```{r}
+res_hc_2 <- cutree(fed_hc, h = 0.05)
+res_hc_2
+```
+
+```{r}
+tibble(
+  clust = res_hc_2,
+  auth = auths_known
+) %>%
+  count(clust, auth)
+```
+
+
+## Try it!
+
+#### Apply hierarchical clustering to the cannabis data
+#### Compare your results to k-means. Which do you prefer?  Why?

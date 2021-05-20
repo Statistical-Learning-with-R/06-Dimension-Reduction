@@ -97,7 +97,7 @@ new_dims_df
 
 ```{r}
 new_dims_df %>%
-  ggplot(aes(x = PC1, y = PC2, color = auths_known)) +
+  ggplot(aes(x = PC1, y = PC2, color = cann$Type)) +
   geom_point()
 ```
 

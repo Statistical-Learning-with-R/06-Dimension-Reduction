@@ -1,0 +1,432 @@
+---
+title: "Clustering"
+output:
+  xaringan::moon_reader:
+    css: xaringan-themer.css
+    lib_dir: libs
+    nature:
+      highlightLines: yes
+      highlightStyle: github
+      countIncrementalSlides: false
+      ratio: '16:9'
+
+---
+
+```{r setup, include=FALSE}
+options(htmltools.dir.version = FALSE, digits = 4, scipen=999)
+library(tidyverse)
+library(tidymodels)
+library(flair)
+library(kknn)
+library(glmnet)
+library(discrim)
+```
+
+```{r xaringan-themer, include=FALSE}
+library(xaringanthemer)
+library(xaringanExtra)
+style_mono_light(
+  base_color = "#26116c",
+  text_bold_color = "#fd5e53",
+  title_slide_text_color = "#fff8e7",
+  background_color = "#fff8e7",
+  header_font_google = google_font("Roboto"),
+  text_font_google   = google_font("Roboto Condensed"),
+  code_font_google   = google_font("Droid Mono")
+)
+```
+
+```{css, echo = FALSE}
+.red{ color: red; }
+.blue{ color: blue; }
+.huge {
+  font-size: 200%;
+}
+.large {
+  font-size: 150%;
+}
+.tiny {
+  font-size: 50%;
+}
+```
+
+
+---
+## Unsupervised Learning
+
+So far in this class, we've only done **supervised learning**.
+
+Meaning:  We have a **response variable** and we observe its value for all or some of our observations.
+
+--
+
+**Clustering** is a type of **unsupervised learning**.
+
+--
+
+We want to sort our observations into **clusters** based on the **predictors**...
+
+--
+
+... but we don't have a pre-conceived notion of what those clusters represent!
+
+---
+
+## Clustering
+
+The general goal of clustering is typically to make clusters such that points **within** a cluster are closer to each other than to the points **outside** the cluster.
+
+--
+
+What is our definition of **close**?
+
+--
+
+How **many** clusters do we think exist?
+
+--
+
+What **algorithm** do we use to select the clusters?
+
+
+---
+## K-means clustering
+
+Idea:  Iteratively update the **centers** of the clusters until convergence.
+
+--
+
+1. Plop 3 random points down in space. These are the *centroids*.
+
+--
+
+2. Determine which centroid each observation is closest to.  Assign it to that cluster.
+
+--
+
+3. Mind the mean of each cluster.  These are the *new* centroids.
+
+--
+
+4. Continue until the centroids don't change.
+
+---
+
+![](https://www.naftaliharris.com/blog/visualizing-k-means-clustering/)
+
+---
+
+## K-means Clustering
+
+The `kmeans()` function needs to be given a **matrix of data** and a **number of clusters**.
+
+It gives back **centroids**, **cluster assignments**, and **sum-of-squares**.
+
+--
+
+```{r, echo = FALSE}
+# Read data
+fed <- read.csv("https://www.dropbox.com/s/9t8sxr1sg0monih/federalist.txt?dl=1")
+fed <- fed[,-1]
+
+# Keep numeric section only
+fed_all <- as.matrix(fed[,-1])
+fed_all <- apply(fed_all, 2, as.numeric)
+
+auths <- fed$Author
+
+# Data from papers with known authors
+fed_known <- as.matrix(fed[auths != 'DIS',-1])
+fed_known <- apply(fed_known, 2, as.numeric)
+
+auths_known = auths[auths != 'DIS']
+
+# Data from papers with unknown authors
+fed_unknown <- as.matrix(fed[auths == 'DIS',-1])
+fed_unknown <- apply(fed_unknown, 2, as.numeric)
+
+fed_ex <- as_tibble(fed_known) %>% cbind(auths_known)
+fed_matrix <- fed_ex %>% select(-auths_known) %>% as.matrix()
+```
+
+```{r}
+fed_km <- kmeans(fed_matrix, 3)
+fed_km
+```
+
+---
+
+```{r}
+fed_km$centers
+```
+
+---
+
+```{r}
+fed_km$totss
+fed_km$withinss
+fed_km$betweenss
+```
+
+---
+
+```{r}
+res <- tibble(
+  clust = fed_km$cluster, 
+  auth = fed_ex$auths)
+
+res
+```
+
+---
+
+```{r}
+res %>% count(clust, auth)
+```
+
+---
+## K-means + PCA
+
+Did we really need all 200 variables to find those clusters?  
+
+--
+
+Did we maybe "muddy the waters" by weighing all variables equally?
+
+--
+
+It is **very common** to do a PCA reduction before running k-means!
+
+--
+
+```{r}
+pc <- prcomp(fed_matrix, center = TRUE, scale = TRUE)
+
+fed_reduced <- pc$x[, 1:2]
+
+fed_pca_km <- kmeans(fed_reduced, 3)
+```
+
+---
+
+```{r}
+res <- tibble(
+  clust = fed_pca_km$cluster, 
+  auth = fed_ex$auths)
+
+res %>% count(clust, auth)
+```
+
+
+---
+## What if we'd done four centroids?
+
+```{r}
+pc <- prcomp(fed_matrix, center = TRUE, scale = TRUE)
+
+fed_reduced <- pc$x[, 1:2]
+
+fed_pca_km <- kmeans(fed_reduced, 4)
+
+res <- tibble(
+  clust = fed_pca_km$cluster, 
+  auth = fed_ex$auths)
+
+res %>% count(clust, auth)
+```
+---
+## K-means
+
+**Pros:**
+
+--
+
+* Simple algorithm, easy to understand
+
+--
+
+* Plays nice with PCA
+
+--
+
+* SUPER fast to compute
+
+--
+
+**Cons:**
+
+--
+
+* Very sensitive to the random locations of initial centroids
+
+--
+
+* The user has to pick how many clusters.
+
+
+---
+class: center, middle, inverse
+
+# Try it!
+
+## Open a **Activity-Clustering.Rmd**
+
+#### Apply k-means clustering to the cannabis data using *all* the word predictors.
+#### What was the within and between sum of squares?
+#### Did the clusters match up with the Type?
+
+#### Refer back to your PCA analysis of the cannabis data.
+#### Apply k-means clustering to the **second and third** PC only
+#### Plot these clusters.  What do you think they capture?
+
+---
+
+## Hierarchical Clustering
+
+(also called **agglomerative** clustering)
+
+Idea:  Merge observations that are close together.
+
+--
+
+1. Find the closest two observations.  Replace them with their centroid.
+
+--
+
+2. Find the next two closest observations.  (One might be the centroid!) Replace them with their centroid.
+
+--
+
+3. Continue until all observations have been merged.
+
+
+---
+## Hierarchical clustering
+
+
+.pull-left[
+![](https://upload.wikimedia.org/wikipedia/commons/thumb/b/b5/Clusters.svg/250px-Clusters.svg.png)
+]
+
+.pull-right[
+![](https://upload.wikimedia.org/wikipedia/commons/thumb/a/ad/Hierarchical_clustering_simple_diagram.svg/418px-Hierarchical_clustering_simple_diagram.svg.png)
+]
+
+---
+## Hierarchical clustering
+
+The `hclust` function needs to be given a *distance matrix*.
+
+--
+
+```{r, error = TRUE}
+fed_hc <- fed_matrix %>% hclust()
+```
+
+---
+## Hierarchical clustering
+
+The `hclust` function needs to be given a *distance matrix*.
+
+It gives back a **dendrogram**.
+
+--
+
+```{r}
+fed_hc <- fed_matrix %>% dist() %>% hclust()
+```
+
+---
+
+```{r}
+plot(fed_hc)
+```
+---
+
+```{r}
+plot(fed_hc, labels = fed_ex$auths)
+```
+
+---
+## Dendrograms
+
+To decide how to assign clusters, we can:
+
+1. Choose **how many** clusters we want...
+
+--
+
+```{r}
+res_hc <- cutree(fed_hc, k = 3)
+
+res_hc
+```
+
+---
+
+
+```{r}
+tibble(
+  clust = res_hc,
+  auth = fed_ex$auths
+) %>%
+  count(clust, auth)
+```
+
+
+---
+## Dendrograms
+
+To decide how to assign clusters, we can:
+
+2. Choose a **height cutoff** for the dendrogram
+
+--
+
+```{r}
+res_hc_2 <- cutree(fed_hc, h = 0.05)
+res_hc_2
+```
+
+---
+
+
+```{r}
+tibble(
+  clust = res_hc_2,
+  auth = fed_ex$auths
+) %>%
+  count(clust, auth)
+```
+
+---
+## Hierarchical Clustering
+
+**Pros:**
+
+--
+
+* Fast computation for moderate sized data
+
+--
+
+* Gives back full information in dendrogram form
+
+
+--
+
+**Cons:**
+
+--
+
+* User has to decide how to go from dendrogram to cluster assignments
+
+---
+class: center, middle, inverse
+
+# Try it!
+
+## Open **Activity-Clustering.Rmd**
+
+#### Apply hierarchical clustering to the cannabis data
+#### Compare your results to k-means. Which do you prefer?  Why?
