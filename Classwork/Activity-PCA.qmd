@@ -1,0 +1,222 @@
+---
+title: "Principal Components Analysis"
+author: "YOUR NAME HERE"
+format: 
+  html:
+    code-fold: true
+    code-line-numbers: true
+    code-tools: true
+    self-contained: true
+editor: visual
+execute:
+  message: false
+---
+
+```{r, eval = TRUE, version = "none"}
+templar::versions_quarto_multilingual(global_eval = FALSE, to_jupyter = TRUE, warn_edit = FALSE)
+```
+
+## Setup
+
+Declare your libraries:
+
+```{r, version = "R"}
+#| label: libraries-r
+#| include: false
+library(tidyverse)
+library(tidymodels)
+library(glmnet)
+library(discrim)
+library(rpart)
+library(rpart.plot)
+library(baguette)
+```
+
+```{python, version = "python"}
+#| label: libraries-py
+#| include: false
+import pandas as pd
+import numpy as np
+
+import seaborn as sns
+import matplotlib.pyplot as plt
+
+
+from sklearn.linear_model import LinearRegression, LogisticRegression, Lasso, Ridge, ElasticNet
+from sklearn.neighbors import KNeighborsRegressor, KNeighborsClassifier
+
+from sklearn.metrics import r2_score, confusion_matrix, accuracy_score, precision_score, recall_score, roc_auc_score, make_scorer
+
+from sklearn.preprocessing import OneHotEncoder, StandardScaler, LabelEncoder
+from sklearn.compose import make_column_transformer
+from sklearn.pipeline import Pipeline, make_pipeline
+
+from sklearn.model_selection import cross_val_score, GridSearchCV, KFold
+
+from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
+from sklearn.discriminant_analysis import QuadraticDiscriminantAnalysis
+
+from sklearn.tree import DecisionTreeClassifier, plot_tree, RandomForestClassifier
+
+from sklearn.ensemble import BaggingClassifier
+
+from itertools import combinations
+
+import statsmodels.api as sm
+
+from sklearn.decomposition import PCA
+
+```
+
+## Data Prep
+
+```{r, version = "R"}
+cann <- read_csv("https://www.dropbox.com/s/s2a1uoiegitupjc/cannabis_full.csv?dl=1")
+
+cann <- cann %>% drop_na()
+
+cann_matrix <- cann %>%
+  select(-Type, -Strain, -Effects, -Flavor, -Dry, -Mouth) %>%
+  as.matrix()
+
+cann_types <- cann %>% pull(Type)
+```
+
+```{python, version = "python"}
+
+cann = pd.read_csv("https://www.dropbox.com/s/s2a1uoiegitupjc/cannabis_full.csv?dl=1")
+
+cann = cann.dropna() 
+cann["Type"] = cann["Type"].astype("category")
+
+cann_matrix = cann.drop(columns = ["Type", "Strain", "Effects", "Flavor", "Dry", "Mouth"])
+
+
+```
+
+## Relevant code from Lecture
+
+(You will need to change this for the Cannabis data!)
+
+```{r, version = "R"}
+fed %>%
+  ggplot(aes(x = there, y = would, color = auths_known)) +
+  geom_point()
+```
+
+```{python, version = "python"}
+sns.lmplot( x="there", y="would", data=fed, fit_reg=False, hue='auths_known', legend=False)
+
+plt.show()
+```
+
+PCA:
+
+```{r, version = "R"}
+pc <- prcomp(fed_matrix, center = TRUE, scale = TRUE)
+```
+
+```{python, version = "python"}
+pipeline = make_pipeline(
+  StandardScaler(),
+  PCA()
+)
+
+pc = pipeline.fit(fed_matrix)
+```
+
+Combinations of variables that create new axes:
+
+```{r, version = "R"}
+pc$rotation
+```
+
+```{python, version = "python"}
+pc['pca'].components_
+```
+
+Check out most important PCs:
+
+```{r, version = "R"}
+pc$rotation %>% 
+  data.frame() %>%
+  arrange(desc(abs(PC1)))
+```
+
+```{python, version = "python"}
+pc1 = pd.Series(data = pc['pca'].components_[1], index = fed_matrix.columns)
+
+pc1.sort_values()
+pc1.sort_values(ascending = False)
+
+```
+
+Make a dataframe with PCs as columns:
+
+```{r, version = "R"}
+new_dims_df <- pc$x %>%
+  as.data.frame()
+
+new_dims_df
+```
+
+```{python, version = "python"}
+new_dims_df = pc.transform(fed_matrix)
+new_dims_df = pd.DataFrame(new_dims_df)
+
+# make column names be strings instead of weird integers
+new_dims_df.columns = new_dims_df.columns.map(str)
+
+new_dims_df["auths"] = fed["auths_known"]
+```
+
+Plot first two PC dims:
+
+```{r, version = "R"}
+new_dims_df %>%
+  ggplot(aes(x = PC1, y = PC2, color = auths_known)) +
+  geom_point()
+```
+
+```{python, version = "python"}
+sns.lmplot(x="0", y="1", data=new_dims_df, fit_reg=False, legend=False, hue='auths_known')
+
+plt.show()
+```
+
+Standard deviations and variances:
+
+```{r, version = "R"}
+pc$sdev
+```
+
+```{r, version = "R"}
+cumul_vars <- cumsum(pc$sdev^2)/sum(pc$sdev^2)
+cumul_vars
+```
+
+```{python, version = "python"}
+pc['pca'].explained_variance_
+var_ex = pc['pca'].explained_variance_ratio_
+np.cumsum(var_ex)
+```
+
+## Try it!
+
+#### Apply PCA to the cannabis data
+
+#### Interpret the PC rotations - what are the most important variables?
+
+#### Plot the data on the first two axes, and color by Type.
+
+#### Choose a "good" number of PCs to use.
+
+#### Fit a KNN classifier using:
+
+#### (a) All the variables
+
+#### (b) Only the 5 most important variables according to PCA.
+
+#### (C) Only your chosen PCs.
+
+#### How does the accuracy of these three approaches compare?

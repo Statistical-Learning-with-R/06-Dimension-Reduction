@@ -1,0 +1,202 @@
+---
+title: "Clustering and PCA"
+author: "YOUR NAME HERE"
+format: 
+  html:
+    code-fold: true
+    code-line-numbers: true
+    code-tools: true
+    self-contained: true
+editor: visual
+execute:
+  message: false
+---
+
+## Setup
+
+Declare your libraries:
+
+```{r}
+#| label: libraries-r
+#| include: false
+library(tidyverse)
+library(tidymodels)
+library(glmnet)
+library(discrim)
+library(rpart)
+library(rpart.plot)
+library(baguette)
+```
+
+
+# Dataset:  Spotify Song Attributes
+
+This week's dataset was assembled from the Spotify API by a Cal Poly graduate.  
+You can find the full data on Kaggle here: https://www.kaggle.com/danield2255/data-on-songs-from-billboard-19992019 
+
+We will work with only a subset of the `songAttributes_1999-2019.csv` dataset from that Kaggle site.  You will need to refer to the Kaggle documentation for specific information about what each variable means.
+
+Run the following code to read the data and convert it to scaled matrix form:
+
+```{r}
+songs <- read_csv("https://www.dropbox.com/s/hijzbof7nnche09/top_artists_spotify-no_labels.csv?dl=1")
+songs_matrix <- as.matrix(songs) %>% scale()
+```
+
+
+This dataset contains measurements of various musical/acoustic attributes for songs released between 1999 and 2019.  The songs are by 14 unique popular artists, with 100 songs per artist in the dataset.
+
+# Part One: PCA + k-means
+
+#### Q1: k-means without PCA
+
+Apply the k-means clustering algorithm to the data, with k = 3, k = 5, and k = 7.
+
+Which of these do you think is the best clustering choice?  Make an argument based on the *sum of squared distances* between and within clusters.
+
+#### Q2: PCA
+
+Perform a Principal Components Analysis on this data.  Answer the following questions about the components:
+
+* Which variables best spread the data?  
+
+* How many PCs would we need to use to recover 50% of the total variance in the data?  80%?  90%?
+
+* Come up with a "real-world" interpretation of the first two Principal Components.
+(For example, in our practice data, we might have said "The first component measure Type, and the second component measures "Blueberryness".)
+
+* Plot the observations in the first two PCs
+
+#### Q3: k-means plus PCA
+
+Make a choice for how many PCs to use, based on the results of Q2.
+
+Apply k-means using those dimensions only.
+
+Try a few values of k, and make an argument for the best one.
+
+#### Q4: Plotting
+
+Plot the observations in the first two PCs, and color them by their assigned clusters in Q3.
+
+```{r}
+pca_km <- pca$x %>%
+  as_tibble() %>%
+  mutate(
+    cluster = factor(km$cluster)
+  )
+```
+
+#### Q5:  Interpretation
+
+Does this clustering seem to be capturing real structure?
+
+Run the code below, but using your own k-means result object, to find the average values of each variable in each cluster.
+
+```{r}
+songs %>%
+  mutate(
+    cluster = km$cluster
+  ) %>%
+  group_by(cluster) %>%
+  summarize(across(Acousticness:Valence, mean))
+```
+
+
+What real-world qualities do you think define each cluster?
+
+(For example, you might say, "The songs in cluster 1 all have high speechiness, and low instrumentalness, so they might be rap.)
+
+# Part Two: Hierarchical Clustering
+
+#### Q1: Dendrogram
+
+Perform a hierarchical clustering on the songs data, and plot the dendrogram.
+
+#### Q2: Cluster assignments
+
+Choose a cutoff for the dendrogram, and justify your choice.
+
+Produce the cluster assignments for each song based on that cutoff.
+
+#### Q3: Interpretation
+
+Use the same code as in Part 1, Q5 to examine your resulting clusters and interpret them.
+
+# Part Three: Verification
+
+Now, use the following code to load the name, artist, and album of each song.  (This data is in the same order as your original `songs` and `songs_matrix` data, of course.)
+
+```{r}
+songs_full <- read_csv("https://www.dropbox.com/s/5ke5fi3hlu0f02w/top_artists_spotify.csv?dl=1")
+```
+
+
+#### Q1: Interpretation
+
+Refer back to your cluster interpretations at the end of Parts One and Two.
+
+Use the following code to see which artists were in which cluster:
+
+```{r}
+songs_full %>%
+  mutate(
+    cluster = km$cluster
+  ) %>%
+  count(cluster, Artist)
+```
+
+
+Did they turn out to be correct?  That is, do the styles of the artists that are most represented in a particular cluster seem to match your predictions?
+
+(You might need to use Wikipedia to figure out the style/genre of artists you are not familiar with.)
+
+#### Q2: Prediction
+
+My favorite current artist is *twenty one pilots*. Here are the average values of the variables for all of their songs between 1999 and 2019.
+
+```{r}
+top <- c(.28, .65, 21866, .55, 0, .008, .188, -10.2, .64, .21, 117, 3.9, .47)
+
+```
+
+
+Calculate the values of PC1 and PC2 for *twenty one pilots*:
+
+```{r}
+
+means <- colMeans(songs)
+sds <- apply(songs, 2, sd)
+
+top <- (top - means)/sds
+
+sum(top * pca$rotation[1])
+sum(top * pca$rotation[2])
+```
+
+
+Then use this information to suggest which cluster they belong to.  (Hint: Look at the **cluster centers** of your k-means results.)
+
+What artists do you think I probably liked in the 2000s, based on their similarity to *twenty one pilots*? 
+
+# Challenges
+
+## Challenge One: Album Changes
+
+The following code will load the data for just the *twenty one pilots* songs from 1999-2019.
+
+```{r}
+top <- read_csv("https://www.dropbox.com/s/t27qx7kvnylhirj/twenty-one-pilots.csv?dl=1")
+```
+
+
+How do the styles of the **Albums** by *twenty one pilots* differ?
+
+For **10 Challenge Points**, use a clustering approach to comment on this question.
+
+## Challenge Two: PCA + Hclust
+
+For **10 Challenge Points**, use a PCA reduction *before* hierarchical clustering.  Plot the original dendrogram with artist labels, and the new dendrogram with artist labels.  Which one seems to do a better job grouping songs by the same artist?
+
+(Your dendrograms will probably look very ugly in the knitted file - don't worry about that, just make sure you discuss them thoroughly.)
+

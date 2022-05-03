@@ -86,13 +86,17 @@ What does "too many" mean?
 Instead of:
 
 axis 1 = Predictor A
+
 axis 2 = Predictor B
+
 axis 3 = Predictor C
 
 --
 
 axis 1 = 0.5 (Pred A) + 0.2 (Pred B) + 0.3 (Pred C)
+
 axis 2 = 0.1 (Pred A) + 0.7 (Pred B) + 0.2 (Pred C)
+
 axis 3 = 0.1 (Pred A) + 0.2 (Pred B) + 0.8 (Pred C)
 
 
@@ -115,16 +119,16 @@ axis 3 = 0.1 (Pred A) + 0.2 (Pred B) + 0.8 (Pred C)
 
 --
 
-4. Continue until you have `\(p\)` PCs, where `\(p\)` = number of predictors.
+4. Continue until you have `\(p\)` PCs, where `\(p\)` = number of predictors (or, if `\(p &gt; n\)`, until you have `\(n\)` PCs).
 
 --
 
-5. Use only the first `\(k\)` predictors in your analysis, where `\(k &lt; p\)`.
+5. Use only the first `\(k\)` predictors in your analysis, where `\(k &lt; p\)` and `\(k &lt; n\)`.
 
 ---
 ## Example
 
-The **Federalist paper** are a series of essays written by John Jay, Alexander Hamilton, and James Madison.
+The **Federalist papers** are a series of essays written by John Jay, Alexander Hamilton, and James Madison.
 
 Data: How many of each word was used in each essay (for the most common 200 words only).
 
@@ -134,6 +138,8 @@ Data: How many of each word was used in each essay (for the most common 200 word
 ## Example
 
 If we choose a couple words and plot our data...
+
+---
 
 ![](index_files/figure-html/unnamed-chunk-3-1.png)&lt;!-- --&gt;
 
@@ -147,15 +153,12 @@ Instead, let's apply pca:
 fed_matrix &lt;- fed_ex %&gt;% select(-auths_known) %&gt;% as.matrix()
 pc &lt;- prcomp(fed_matrix, center = TRUE, scale = TRUE)
 ```
+
 ---
 ## Example
 
 Combinations of variables that create new axes:
 
-
-```r
-pc$rotation
-```
 
 ```
 ##               PC1        PC2        PC3        PC4        PC5       PC6
@@ -947,14 +950,6 @@ pc$rotation
 What variables matter most?
 
 
-```r
-pcs_df &lt;- pc$rotation %&gt;%
-  as.data.frame() %&gt;%
-  rownames_to_column() 
-
-pcs_df %&gt;%
-  arrange(desc(abs(PC1)))
-```
 
 ```
 ##    rowname        PC1        PC2        PC3        PC4        PC5       PC6
@@ -1745,6 +1740,8 @@ pcs_df %&gt;%
 
 This doesn't really help us visualize the data...
 
+---
+
 ![](index_files/figure-html/unnamed-chunk-7-1.png)&lt;!-- --&gt;
 
 
@@ -1754,12 +1751,6 @@ This doesn't really help us visualize the data...
 Locations of observations on new axes:
 
 
-```r
-new_dims_df &lt;- pc$x %&gt;%
-  as.data.frame()
-
-new_dims_df
-```
 
 ```
 ##           PC1      PC2      PC3      PC4       PC5      PC6      PC7       PC8
@@ -2475,7 +2466,6 @@ new_dims_df
 ```
 
 ---
-## Example
 
 
 ```r
@@ -2489,10 +2479,8 @@ new_dims_df %&gt;%
 ---
 ## Example
 
+Standard deviations of PC scores:
 
-```r
-pc$sdev
-```
 
 ```
 ##  [1] 2.584293976481497168 2.224602605692588053 2.133495077907519910
@@ -2523,6 +2511,8 @@ pc$sdev
 
 ---
 ## Example
+
+Cumulative variances:
 
 
 ```r
@@ -2561,11 +2551,19 @@ No single answer; people often do "enough for 90% variance covered" or similar.
 
 --
 
-**How do you do clustering/classification with PCA?**
+**How do you do modeling with PCA?**
 
 --
 
-You don't.  It's a data *preprocessing* step.  You would then use `PC1`, `PC2`, etc as your predictors.
+You don't.  It's a data *preprocessing* step. 
+
+--
+
+You would then use `PC1`, `PC2`, etc **instead of** your original predictors.
+
+--
+
+**OR** you might use the variable importance measures ("pc loadings") to help decide which predictors to keep.
 
 ---
 ## Pros and Cons
@@ -2590,13 +2588,34 @@ You don't.  It's a data *preprocessing* step.  You would then use `PC1`, `PC2`, 
 
 * Dropping off lower PCs gets rid of useful info (maybe)
 
+---
+## But wait - isn't this LDA?
+
+Recall that **LDA** also found *scores* for your observations based on a *linear combination* of the original predictors.
+
+--
+
+So what's the difference?
+
+--
+
+LDA loadings are trying to maximize the **difference in mean scores across categories**.
+
+(*supervised* method)
+
+--
+
+PCA loadings are trying to maximize the **variance of the scores** on the PC axes.
+
+(*unsupervised* method)
+
 
 ---
 class: center, middle, inverse
 
 # Try it!
 
-## Open a **Activity-PCA.Rmd**
+## Open **Activity-PCA.Rmd**
 #### Apply PCA to the cannabis data
 #### Interpret the PC rotations
 #### Plot the data on the first two axes, and color by Type.

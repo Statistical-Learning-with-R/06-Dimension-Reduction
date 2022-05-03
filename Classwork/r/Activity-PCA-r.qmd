@@ -1,0 +1,130 @@
+---
+title: "Principal Components Analysis"
+author: "YOUR NAME HERE"
+format: 
+  html:
+    code-fold: true
+    code-line-numbers: true
+    code-tools: true
+    self-contained: true
+editor: visual
+execute:
+  message: false
+---
+
+## Setup
+
+Declare your libraries:
+
+```{r}
+#| label: libraries-r
+#| include: false
+library(tidyverse)
+library(tidymodels)
+library(glmnet)
+library(discrim)
+library(rpart)
+library(rpart.plot)
+library(baguette)
+```
+
+
+## Data Prep
+
+```{r}
+cann <- read_csv("https://www.dropbox.com/s/s2a1uoiegitupjc/cannabis_full.csv?dl=1")
+
+cann <- cann %>% drop_na()
+
+cann_matrix <- cann %>%
+  select(-Type, -Strain, -Effects, -Flavor, -Dry, -Mouth) %>%
+  as.matrix()
+
+cann_types <- cann %>% pull(Type)
+```
+
+
+## Relevant code from Lecture
+
+(You will need to change this for the Cannabis data!)
+
+```{r}
+fed %>%
+  ggplot(aes(x = there, y = would, color = auths_known)) +
+  geom_point()
+```
+
+
+PCA:
+
+```{r}
+pc <- prcomp(fed_matrix, center = TRUE, scale = TRUE)
+```
+
+
+Combinations of variables that create new axes:
+
+```{r}
+pc$rotation
+```
+
+
+Check out most important PCs:
+
+```{r}
+pc$rotation %>% 
+  data.frame() %>%
+  arrange(desc(abs(PC1)))
+```
+
+
+Make a dataframe with PCs as columns:
+
+```{r}
+new_dims_df <- pc$x %>%
+  as.data.frame()
+
+new_dims_df
+```
+
+
+Plot first two PC dims:
+
+```{r}
+new_dims_df %>%
+  ggplot(aes(x = PC1, y = PC2, color = auths_known)) +
+  geom_point()
+```
+
+
+Standard deviations and variances:
+
+```{r}
+pc$sdev
+```
+
+```{r}
+cumul_vars <- cumsum(pc$sdev^2)/sum(pc$sdev^2)
+cumul_vars
+```
+
+
+## Try it!
+
+#### Apply PCA to the cannabis data
+
+#### Interpret the PC rotations - what are the most important variables?
+
+#### Plot the data on the first two axes, and color by Type.
+
+#### Choose a "good" number of PCs to use.
+
+#### Fit a KNN classifier using:
+
+#### (a) All the variables
+
+#### (b) Only the 5 most important variables according to PCA.
+
+#### (C) Only your chosen PCs.
+
+#### How does the accuracy of these three approaches compare?

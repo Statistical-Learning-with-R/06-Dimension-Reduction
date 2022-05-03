@@ -105,13 +105,17 @@ What does "too many" mean?
 Instead of:
 
 axis 1 = Predictor A
+
 axis 2 = Predictor B
+
 axis 3 = Predictor C
 
 --
 
 axis 1 = 0.5 (Pred A) + 0.2 (Pred B) + 0.3 (Pred C)
+
 axis 2 = 0.1 (Pred A) + 0.7 (Pred B) + 0.2 (Pred C)
+
 axis 3 = 0.1 (Pred A) + 0.2 (Pred B) + 0.8 (Pred C)
 
 
@@ -134,16 +138,16 @@ axis 3 = 0.1 (Pred A) + 0.2 (Pred B) + 0.8 (Pred C)
 
 --
 
-4. Continue until you have $p$ PCs, where $p$ = number of predictors.
+4. Continue until you have $p$ PCs, where $p$ = number of predictors (or, if $p > n$, until you have $n$ PCs).
 
 --
 
-5. Use only the first $k$ predictors in your analysis, where $k < p$.
+5. Use only the first $k$ predictors in your analysis, where $k < p$ and $k < n$.
 
 ---
 ## Example
 
-The **Federalist paper** are a series of essays written by John Jay, Alexander Hamilton, and James Madison.
+The **Federalist papers** are a series of essays written by John Jay, Alexander Hamilton, and James Madison.
 
 Data: How many of each word was used in each essay (for the most common 200 words only).
 
@@ -176,6 +180,8 @@ fed_ex <- as_tibble(fed_known) %>% cbind(auths_known)
 
 If we choose a couple words and plot our data...
 
+---
+
 ```{r, echo = FALSE}
 fed_ex %>%
   ggplot(aes(x = there, y = would, color = auths_known)) +
@@ -191,12 +197,13 @@ Instead, let's apply pca:
 fed_matrix <- fed_ex %>% select(-auths_known) %>% as.matrix()
 pc <- prcomp(fed_matrix, center = TRUE, scale = TRUE)
 ```
+
 ---
 ## Example
 
 Combinations of variables that create new axes:
 
-```{r}
+```{r, echo = FALSE}
 pc$rotation
 ```
 
@@ -205,7 +212,8 @@ pc$rotation
 
 What variables matter most?
 
-```{r}
+
+```{r, echo = FALSE}
 pcs_df <- pc$rotation %>%
   as.data.frame() %>%
   rownames_to_column() 
@@ -219,6 +227,8 @@ pcs_df %>%
 
 This doesn't really help us visualize the data...
 
+---
+
 ```{r, echo = FALSE}
 fed_ex %>%
   ggplot(aes(x = and, y = of, color = auths_known)) +
@@ -231,7 +241,8 @@ fed_ex %>%
 
 Locations of observations on new axes:
 
-```{r}
+
+```{r, echo = FALSE}
 new_dims_df <- pc$x %>%
   as.data.frame()
 
@@ -239,7 +250,6 @@ new_dims_df
 ```
 
 ---
-## Example
 
 ```{r}
 new_dims_df %>%
@@ -250,12 +260,16 @@ new_dims_df %>%
 ---
 ## Example
 
-```{r}
+Standard deviations of PC scores:
+
+```{r, echo = FALSE}
 pc$sdev
 ```
 
 ---
 ## Example
+
+Cumulative variances:
 
 ```{r}
 cumul_vars <- cumsum(pc$sdev^2)/sum(pc$sdev^2)
@@ -279,11 +293,19 @@ No single answer; people often do "enough for 90% variance covered" or similar.
 
 --
 
-**How do you do clustering/classification with PCA?**
+**How do you do modeling with PCA?**
 
 --
 
-You don't.  It's a data *preprocessing* step.  You would then use `PC1`, `PC2`, etc as your predictors.
+You don't.  It's a data *preprocessing* step. 
+
+--
+
+You would then use `PC1`, `PC2`, etc **instead of** your original predictors.
+
+--
+
+**OR** you might use the variable importance measures ("pc loadings") to help decide which predictors to keep.
 
 ---
 ## Pros and Cons
@@ -308,13 +330,34 @@ You don't.  It's a data *preprocessing* step.  You would then use `PC1`, `PC2`, 
 
 * Dropping off lower PCs gets rid of useful info (maybe)
 
+---
+## But wait - isn't this LDA?
+
+Recall that **LDA** also found *scores* for your observations based on a *linear combination* of the original predictors.
+
+--
+
+So what's the difference?
+
+--
+
+LDA loadings are trying to maximize the **difference in mean scores across categories**.
+
+(*supervised* method)
+
+--
+
+PCA loadings are trying to maximize the **variance of the scores** on the PC axes.
+
+(*unsupervised* method)
+
 
 ---
 class: center, middle, inverse
 
 # Try it!
 
-## Open a **Activity-PCA.Rmd**
+## Open **Activity-PCA.Rmd**
 #### Apply PCA to the cannabis data
 #### Interpret the PC rotations
 #### Plot the data on the first two axes, and color by Type.

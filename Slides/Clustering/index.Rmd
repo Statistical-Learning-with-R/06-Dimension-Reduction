@@ -13,7 +13,7 @@ output:
 ---
 
 ```{r setup, include=FALSE}
-options(htmltools.dir.version = FALSE, digits = 4, scipen=999)
+options(htmltools.dir.version = FALSE, digits = 4, scipen=999, echo = FALSE)
 library(tidyverse)
 library(tidymodels)
 library(flair)

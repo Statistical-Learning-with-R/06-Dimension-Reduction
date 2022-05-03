@@ -1,0 +1,281 @@
+---
+title: "Clustering"
+author: "YOUR NAME HERE"
+format: 
+  html:
+    code-fold: true
+    code-line-numbers: true
+    code-tools: true
+    self-contained: true
+editor: visual
+execute:
+  message: false
+---
+
+```{r, eval = TRUE, version = "none"}
+templar::versions_quarto_multilingual(global_eval = FALSE, to_jupyter = TRUE, warn_edit = FALSE)
+```
+
+## Setup
+
+Declare your libraries:
+
+```{r, version = "R"}
+#| label: libraries-r
+#| include: false
+library(tidyverse)
+library(tidymodels)
+library(glmnet)
+library(discrim)
+library(rpart)
+library(rpart.plot)
+library(baguette)
+```
+
+```{python, version = "python"}
+#| label: libraries-py
+#| include: false
+import pandas as pd
+import numpy as np
+
+import seaborn as sns
+import matplotlib.pyplot as plt
+
+
+from sklearn.linear_model import LinearRegression, LogisticRegression, Lasso, Ridge, ElasticNet
+from sklearn.neighbors import KNeighborsRegressor, KNeighborsClassifier
+
+from sklearn.metrics import r2_score, confusion_matrix, accuracy_score, precision_score, recall_score, roc_auc_score, make_scorer
+
+from sklearn.preprocessing import OneHotEncoder, StandardScaler, LabelEncoder
+from sklearn.compose import make_column_transformer
+from sklearn.pipeline import Pipeline, make_pipeline
+
+from sklearn.model_selection import cross_val_score, GridSearchCV, KFold
+
+from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
+from sklearn.discriminant_analysis import QuadraticDiscriminantAnalysis
+
+from sklearn.tree import DecisionTreeClassifier, plot_tree, RandomForestClassifier
+
+from sklearn.ensemble import BaggingClassifier
+
+from itertools import combinations
+
+import statsmodels.api as sm
+
+from sklearn.decomposition import PCA
+
+from sklearn.cluster import KMeans, AgglomerativeClustering
+from sklearn.cluster.hierarchy import dendrogram, linkage
+
+```
+
+## Data Prep
+
+```{r, version = "R"}
+cann <- read_csv("https://www.dropbox.com/s/s2a1uoiegitupjc/cannabis_full.csv?dl=1")
+
+cann <- cann %>% drop_na()
+
+cann_matrix <- cann %>%
+  select(-Type, -Strain, -Effects, -Flavor, -Dry, -Mouth) %>%
+  as.matrix()
+
+cann_types <- cann %>% pull(Type)
+```
+
+```{python, version = "python"}
+
+cann = pd.read_csv("https://www.dropbox.com/s/s2a1uoiegitupjc/cannabis_full.csv?dl=1")
+
+cann = cann.dropna() 
+cann["Type"] = cann["Type"].astype("category")
+
+cann_matrix = cann.drop(columns = ["Type", "Strain", "Effects", "Flavor", "Dry", "Mouth"])
+
+
+```
+
+## Code from Lecture
+
+
+```{r, version = "R"}
+fed_km <- kmeans(fed_matrix, 3)
+fed_km
+
+fed_km$centers
+
+fed_km$totss
+fed_km$withinss
+fed_km$betweenss
+
+res <- tibble(
+  clust = fed_km$cluster, 
+  auth = auths_known)
+
+res
+
+res %>% count(clust, auth)
+```
+
+```{python, version = "python"}
+fed_km = KMeans(n_clusters = 3)
+fed_km = fed_km.fit(fed_matrix)
+
+fed_km.cluster_centers_
+
+fed_km.inertia_
+
+res = pd.DataFrame({'pred': fed_km.predict(fed_matrix), 'true': auths_known})
+res.value_counts()
+
+```
+
+
+```{r, version = "R"}
+pc <- prcomp(fed_matrix, center = TRUE, scale = TRUE)
+
+fed_reduced <- pc$x[, 1:2]
+
+fed_pca_km <- kmeans(fed_reduced, 3)
+
+res <- tibble(
+  clust = fed_pca_km$cluster, 
+  auth = auths_known)
+
+res %>% count(clust, auth)
+```
+
+```{r, version = "R"}
+
+fed_pca_km <- kmeans(fed_reduced, 4)
+
+res <- tibble(
+  clust = fed_pca_km$cluster, 
+  auth = auths_known)
+
+res %>% count(clust, auth)
+```
+
+```{python, version = "python"}
+pipeline = make_pipeline(
+  StandardScaler(),
+  PCA(),
+  KMeans(n_clusters = 3)
+)
+
+pipeline.fit(fed_matrix)
+
+pipeline['kmeans'].cluster_centers_
+
+pipeline['kmeans'].inertia_
+
+res = pd.DataFrame({'pred': fed_km.predict(fed_matrix), 'true': auths_known})
+
+res.value_counts()
+
+```
+
+```{python, version = "python"}
+pipeline = make_pipeline(
+  StandardScaler(),
+  PCA(),
+  KMeans(n_clusters = 4)
+)
+
+pipeline.fit(fed_matrix)
+
+pipeline['kmeans'].cluster_centers_
+
+pipeline['kmeans'].inertia_
+
+res = pd.DataFrame({'pred': fed_km.predict(fed_matrix), 'true': auths_known})
+
+res.value_counts()
+
+```
+
+
+## Try it!
+
+#### Apply k-means clustering to the cannabis data using *all* the word predictors.
+#### What was the within and between sum of squares?
+#### Did the clusters match up with the Type?
+
+#### Refer back to your PCA analysis of the cannabis data.
+#### Apply k-means clustering to the **second and third** PC only
+#### Plot these clusters.  What do you think they capture?
+
+
+## More code from class
+
+
+```{r, version = "R"}
+fed_hc <- fed_matrix %>% 
+  scale() %>% 
+  dist() %>% 
+  hclust()
+
+plot(fed_hc, labels = fed_known$auths)
+```
+
+```{python, version = "python"}
+fed_hc = linkage(fed_matrix, 'single')
+
+plt.figure(figsize=(10, 7))
+dendrogram(linked,
+            orientation='top',
+            labels=auths_known,
+            distance_sort='descending',
+            show_leaf_counts=True)
+plt.show()
+
+```
+
+```{python, version = "python"}
+pipeline = make_pipeline(
+  StandardScaler(),
+  AgglomerativeClustering(n_clusters = 4)
+)
+
+pipeline.fit(fed_matrix)
+
+res = pd.DataFrame({'pred': fed_km.predict(fed_matrix), 'true': auths_known})
+
+res.value_counts()
+```
+
+```{r, version = "R"}
+res_hc <- cutree(fed_hc, k = 3)
+
+res_hc
+```
+
+
+```{r, version = "R"}
+tibble(
+  clust = res_hc,
+  auth = fed_known$auths
+) %>%
+  count(clust, auth)
+```
+
+```{r, version = "R"}
+res_hc_2 <- cutree(fed_hc, h = 0.05)
+res_hc_2
+```
+
+```{r, version = "R"}
+tibble(
+  clust = res_hc_2,
+  auth = auths_known
+) %>%
+  count(clust, auth)
+```
+
+
+## Try it!
+
+#### Apply hierarchical clustering to the cannabis data
+#### Compare your results to k-means. Which do you prefer?  Why?
